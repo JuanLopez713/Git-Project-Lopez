@@ -20,7 +20,7 @@ public class Git {
 		Index.add(fileName, blob.getSha1());
 	}
 	
-	public void remove(String fileName) {
+	public void remove(String fileName) throws IOException {
 		Index.remove(fileName);
 	}
 	

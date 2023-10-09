@@ -8,21 +8,20 @@ import java.util.HashMap;
 public class Index {
 	public static String filePath = "tree";
 
-	public static void add(String fileName, String sha1Hash) {
-		String indexFullFilePath = filePath;
+	public static void add(String fileName, String sha1Hash) throws IOException {
 		// Grab file contents and parse
-		HashMap<String, String> indexMap = GitUtils.getHashMapFromTextFile(indexFullFilePath);
-		String m_fileSha1 = indexMap.get(fileName);
-		if (m_fileSha1 == null) {
+		HashMap<String, String> indexMap = GitUtils.getHashMapFromTextFile(filePath);
+		String fileSha1 = indexMap.get(fileName);
+		if (fileSha1 == null) {
 			indexMap.put(fileName, sha1Hash);
 
 			// Write file back out
-			GitUtils.writeHashMapToTextFile(indexMap, indexFullFilePath);
+			GitUtils.writeHashMapToTextFile(indexMap, filePath);
 		}
 		return;
 	}
 
-	public static void remove(String fileName) {
+	public static void remove(String fileName) throws IOException{
 		String indexFullFilePath = filePath;
 		System.out.println("File path to hash = " + indexFullFilePath);
 		// Grab file contents and parse
@@ -30,15 +29,15 @@ public class Index {
 	
 		String cleanFileName = fileName;
 		System.out.println("File path to hash = " + cleanFileName);
-		String m_fileSha1 = indexMap.get(cleanFileName);
-		System.out.println("File path to hash = " + m_fileSha1);
-		if (m_fileSha1 != null) {
+		String fileSha1 = indexMap.get(cleanFileName);
+		System.out.println("File path to hash = " + fileSha1);
+		if (fileSha1 != null) {
 
 			indexMap.remove(cleanFileName);
 
 			// Write file back out
 			GitUtils.writeHashMapToTextFile(indexMap, indexFullFilePath);
-			String sha1FileName = "objects\\" + m_fileSha1;
+			String sha1FileName = "objects/" + fileSha1;
 
 			// Delete file from disk
 			File sha1FileToDelete = new File(sha1FileName);

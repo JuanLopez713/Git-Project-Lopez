@@ -103,7 +103,7 @@ public class GitUtils {
 		return out.toString("ISO-8859-1");
 	}
 
-	public static void writeHashMapToTextFile(HashMap<String, String> mapToWrite, String fileName) {
+	public static void writeHashMapToTextFile(HashMap<String, String> mapToWrite, String fileName) throws IOException {
 		String stringToWrite = "";
 		// iterate over HashMap entries
 		for (Map.Entry<String, String> entry : mapToWrite.entrySet()) {
@@ -111,12 +111,14 @@ public class GitUtils {
 		}
 
 		// Save file to disk
-		Path path = Paths.get(fileName);
-		try {
-			Files.writeString(path, stringToWrite, StandardCharsets.ISO_8859_1);
-		} catch (IOException exception) {
-			System.out.println("Write failed for " + fileName);
-		}
+		GitUtils.writeToFile(fileName, stringToWrite);
+
+		// Path path = Paths.get(fileName);
+		// try {
+		// 	Files.writeString(path, stringToWrite, StandardCharsets.ISO_8859_1);
+		// } catch (IOException exception) {
+		// 	System.out.println("Write failed for " + fileName);
+		// }
 	}
 
 	public static String hashMapToString(HashMap<String, String> mapToWrite) {
