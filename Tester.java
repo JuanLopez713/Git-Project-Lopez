@@ -1,8 +1,17 @@
 public class Tester {
-    public static void main(String[] args) throws Exception{
-        GitUtils.createFile("", "test.txt");
-        GitUtils.writeToFile("test.txt", "hello world");
+  public static void main(String[] args) throws Exception {
 
-        Blob b = new Blob("test.txt");
-    }
+    // Git.init();
+    // Git.add("testFile");
+
+    // Git.commit("Juan", "First commit");
+    // Git.cleanUp();
+
+    // Git.add("test.txt");
+
+    Git.commit("Juan", "Second commit");
+    Git.cleanUp();
+
+
+  }
 }

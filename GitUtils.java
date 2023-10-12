@@ -18,20 +18,20 @@ import java.util.zip.GZIPOutputStream;
 
 public class GitUtils {
 
-	public static void createDirectory(String folderName){
+	public static void createDirectory(String folderName) {
 		File file = new File(folderName);
-		if (!file.exists()){
+		if (!file.exists()) {
 			file.mkdir();
 		}
 	}
 
-	public static String createFile(String folderName, String fileName){
+	public static String createFile(String folderName, String fileName) {
 		createDirectory(folderName);
-		if (!fileName.startsWith(folderName)){
+		if (!fileName.startsWith(folderName)) {
 			fileName = folderName + "/" + fileName;
 		}
 		File file = new File(fileName);
-		if (!file.exists()){
+		if (!file.exists()) {
 			try {
 				file.createNewFile();
 			} catch (IOException e) {
@@ -42,14 +42,14 @@ public class GitUtils {
 		return fileName;
 	}
 
-	public static void writeToFile(String fileName, String content) throws IOException{
+	public static void writeToFile(String fileName, String content) throws IOException {
 
 		File file = new File(fileName);
-		if(!file.exists()){
+		if (!file.exists()) {
 			throw new IOException("File not found: " + fileName);
 		}
+
 		// write the contents to the file
-		
 		Path filePath = Paths.get(fileName);
 		try {
 			Files.writeString(filePath, content, StandardCharsets.ISO_8859_1);
@@ -57,10 +57,32 @@ public class GitUtils {
 			e.printStackTrace();
 		}
 
-		
 	}
 
-	public static String encryptThisString(String input) {
+	/*
+	 * this method finds the file and adds the content at the end of the file
+	 * without overwriting existing text
+	 */
+	public static void appendToFile(String fileName, String content) throws IOException {
+
+		File file = new File(fileName);
+		if (!file.exists()) {
+			throw new IOException("File not found: " + fileName);
+		}
+		// write the contents to the file
+		Path filePath = Paths.get(fileName);
+		String fileContents = readFileToString(fileName);
+		if (fileContents.length() > 0) {
+			content = fileContents + "\n" + content;
+		}
+		try {
+			Files.writeString(filePath, content, StandardCharsets.ISO_8859_1);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static String encryptString(String input) {
 		try {
 			// getInstance() method is called with algorithm SHA-1
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
@@ -77,7 +99,7 @@ public class GitUtils {
 			String hashtext = no.toString(16);
 
 			// Add preceding 0s to make it 32 bit
-			while (hashtext.length() < 32) {
+			while (hashtext.length() < 40) {
 				hashtext = "0" + hashtext;
 			}
 
@@ -113,12 +135,6 @@ public class GitUtils {
 		// Save file to disk
 		GitUtils.writeToFile(fileName, stringToWrite);
 
-		// Path path = Paths.get(fileName);
-		// try {
-		// 	Files.writeString(path, stringToWrite, StandardCharsets.ISO_8859_1);
-		// } catch (IOException exception) {
-		// 	System.out.println("Write failed for " + fileName);
-		// }
 	}
 
 	public static String hashMapToString(HashMap<String, String> mapToWrite) {
@@ -178,24 +194,13 @@ public class GitUtils {
 	}
 
 	public static String readFileToString(String fileName) {
-		Path filePath = Paths.get(fileName);
-		StringBuilder contentBuilder = new StringBuilder();
-
-		try (Stream<String> stream = Files.lines(filePath, StandardCharsets.ISO_8859_1)) {
-			// Read the content with Stream
-			stream.forEach(s -> contentBuilder.append(s).append("\n"));
+		/* This method finds the file and reads the contents and returns a string */
+		String content = "";
+		try {
+			content = Files.readString(Paths.get(fileName), StandardCharsets.ISO_8859_1);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		String content = contentBuilder.toString();
-
-		// Check if the content ends with a newline character
-		if (!content.isEmpty() && content.charAt(content.length() - 1) == '\n') {
-			// Remove the last newline character
-			content = content.substring(0, content.length() - 1);
-		}
-
 		return content;
 	}
 
@@ -223,6 +228,16 @@ public class GitUtils {
 		} else {
 			System.out.println("Failed to delete the file.");
 		}
+	}
+
+	public static boolean doesFileExist(String fileName) {
+		File file = new File(fileName);
+		return file.exists();
+	}
+
+	public static boolean isDirectory(String fileName) {
+		File file = new File(fileName);
+		return file.isDirectory();
 	}
 
 	public static boolean deleteDirectory(String directoryToBeDeleted) {
@@ -253,5 +268,23 @@ public class GitUtils {
 			positionOfLastNewLine = currentPosition;
 		}
 		return str.toString();
+	}
+
+	public static String getFileName(String entry) {
+		String[] entryArr = entry.split(":");
+		String fileName = entryArr[2].trim();
+		return fileName;
+	}
+
+	public static void writeArrayListOfStringsToFile(ArrayList<String> listOfStrings, String fileName)
+			throws IOException {
+
+		String stringToWrite = "";
+		for (String string : listOfStrings) {
+			stringToWrite += string + "\n";
+		}
+		/* remove the extra line at the end before writing to file */
+		stringToWrite = stringToWrite.substring(0, stringToWrite.length() - 1);
+		GitUtils.writeToFile(fileName, stringToWrite);
 	}
 }

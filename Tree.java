@@ -1,99 +1,99 @@
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 public class Tree {
 
-	private final static String DEFAULT_INDEX_LOCATION = "Tree";
-	private String fileNameSha1;
-	private ArrayList<String> contentHashMap;
+    private String treeName;
+    private String treeSHA;
 
-	public Tree(ArrayList<String> treeContent) throws IOException {
-		contentHashMap = treeContent;
-		this.setFileNameSha1(this.toString());
-		GitUtils.writeToFile("objects/" + fileNameSha1, this.toString());
-	}
+    public Tree() throws IOException {
 
-	// No previous tree
-	public Tree() throws IOException {
-		this(convertIndexToTreeFormat(Tree.DEFAULT_INDEX_LOCATION));
-	}
+        treeName = "tree";
+        reset();
+    }
 
-	// With Previous Tree
-	
-	public Tree(String previousTree) throws IOException {
-		contentHashMap = convertIndexToTreeFormat(Tree.DEFAULT_INDEX_LOCATION);
-		contentHashMap.add(0, "tree : " + previousTree);
-		this.setFileNameSha1(this.toString());
-		GitUtils.writeToFile("objects/" + fileNameSha1, this.toString());
-	}
+    public Tree(String treeName) throws IOException {
+        this.treeName = treeName;
+        GitUtils.createFile("", treeName);
+        reset();
+    }
 
-	public String toString() {
-		String content = "";
-		for (int i = 0; i < contentHashMap.size(); i++) {
-			content += contentHashMap.get(i);
-			if (i != contentHashMap.size() - 1) {
-				content += "\n";
-			}
-		}
-		return content;
-	}
+    public void addFile(String fileName) throws IOException {
+        if (!GitUtils.doesFileExist(fileName)) {
+            throw new IOException("File does not exist");
+        }
 
-	public static ArrayList<String> convertIndexToTreeFormat(String indexFileLocation) {
+        System.out.println("Adding file: " + fileName);
+        Blob blob = new Blob(fileName);
+        fileName = getFileName(fileName);
+        String entry = "blob : " + blob.getSHA1() + " : " + fileName;
+        GitUtils.appendToFile(treeName, entry);
+    }
 
-		// Get all additions
-		ArrayList<String> allAdditions = new ArrayList<String>();
-		allAdditions = getTreeFormattedBlobAdditionsFromIndex(indexFileLocation);
-		// Get all additions
-		// Get all deleted / modified files
-		// Generate a tree from each modified / deleted item
+    public String getFileName(String entry) {
+        if (entry.contains("/")) {
+            String[] entryArray = entry.split("/");
+            return entryArray[entryArray.length - 1];
+        }
 
-		return allAdditions;
+        return entry;
+    }
 
-	}
+    public void addDirectory(String directoryName) throws IOException {
+        File directory = new File(directoryName);
+        int treeCount = 0;
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException("Not a directory");
+        }
 
-	public void setFileNameSha1(String content) {
-		fileNameSha1 = GitUtils.encryptThisString(content);
-	}
+        System.out.println("Adding directory: " + directoryName);
+        File[] files = directory.listFiles();
 
-	public String getFileNameSha1() {
-		return fileNameSha1;
-	}
+        for (File file : files) {
+            if (file.isDirectory()) {
+                String childTreeName = "tree" + (treeCount + 1);
+                Tree childTree = new Tree(childTreeName);
+                childTree.addDirectory(directoryName + "/" + file.getName());
+                
+                String entry = makeTreeEntry(childTreeName);
+                GitUtils.appendToFile(treeName, entry);
+                GitUtils.deleteFile(childTreeName);    
+            } else {
+                addFile(directoryName + "/" + file.getName());
+            }
+        }
+        Blob blob = new Blob(treeName);
+        treeSHA = blob.getSHA1();
 
-	public static ArrayList<String> getIndexListOfRemovedBranches(String indexFileLocation) {
-		ArrayList<String> indexData = new ArrayList<String>();
-		indexData = GitUtils.readFileToArrayListOfStrings(indexFileLocation);
+    }
 
-		ArrayList<String> editedOrRemovedEntries = new ArrayList<String>();
-		System.out.println("File location:" + indexFileLocation + " size:" + indexData.size());
-		for (int i = 0; i < indexData.size(); i++) {
-			String s = indexData.get(i);
+    public String makeTreeEntry(String treeName) throws IOException{
+        Blob blob = new Blob(treeName);
+        treeName = getFileName(treeName);
+        String entry = "tree : " + blob.getSHA1() + " : " + treeName;
+        return entry;
+    }
 
-			// Check for modified or deleted
-			if (s.indexOf("*modified*") != -1 || s.indexOf("*deleted*") != -1) {
-				System.out.println(s);
-				editedOrRemovedEntries.add(s);
-			}
+    public void remove(String removedFileName) throws IOException {
+        ArrayList<String> treeList = GitUtils.readFileToArrayListOfStrings("tree");
+        for (String string : treeList) {
+            String fileName = GitUtils.getFileName(string);
+            if (fileName.equals(removedFileName)) {
+                treeList.remove(string);
+                GitUtils.writeArrayListOfStringsToFile(treeList, "tree");
+                return;
+            }
+        }
+    }
 
-		}
-		return editedOrRemovedEntries;
-	}
+    public void reset(){
+        GitUtils.deleteFile(treeName);
+        GitUtils.createFile("", treeName);
+    }
 
-	public static ArrayList<String> getTreeFormattedBlobAdditionsFromIndex(String indexFileLocation) {
-		ArrayList<String> indexData = new ArrayList<String>();
-		ArrayList<String> treeFormatedIndexData = new ArrayList<String>();
-		indexData = GitUtils.readFileToArrayListOfStrings(indexFileLocation);
-		for (int i = 0; i < indexData.size(); i++) {
-			String s = indexData.get(i);
+    public String getSHA1() {
+        return treeSHA;
+    }
 
-			// Check for modified or deleted
-			if (s.indexOf("*modified*") == -1 && s.indexOf("*deleted*") == -1) {
-				String sha1 = s.substring(s.indexOf(" : ") + 3, s.indexOf(" : ") + 43);
-				String filePath = s.substring(0, s.indexOf(" : "));
-				String formattedBlobAddition = "blob : " + sha1 + " " + filePath;
-				treeFormatedIndexData.add(formattedBlobAddition);
-			}
-
-		}
-		return treeFormatedIndexData;
-	}
 }
