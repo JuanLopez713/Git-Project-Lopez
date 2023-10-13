@@ -8,7 +8,6 @@ public class Tree {
 
     private String treeFileName;
     private String treeFileContents;
-    private String treeSHA;
 
     private ArrayList<Blob> treeEntries;
 
@@ -30,16 +29,13 @@ public class Tree {
     }
 
     // constructor for restoring TREE files
-    public Tree(String treeSHA, String folderName, boolean restore) throws IOException {
+    public Tree(String treeSHA, String folderName) throws IOException {
         this.treeFileName = treeSHA.trim();
         this.treeFilePath = "objects/" + treeSHA;
 
         this.treeEntries = new ArrayList<Blob>();
         this.folderPath = folderName;
 
-        if (restore) {
-            restore();
-        }
 
     }
 
@@ -56,7 +52,8 @@ public class Tree {
 
             if (line.startsWith("tree")) {
                 String subFolder = folderPath + "/" + lineParts[2].trim();
-                Tree childTree = new Tree(lineParts[1].trim(), subFolder, true);
+                Tree childTree = new Tree(lineParts[1].trim(), subFolder);
+                childTree.restore();
 
             } else {
                 Blob blob = new Blob(lineParts);

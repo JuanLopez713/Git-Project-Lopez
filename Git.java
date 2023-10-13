@@ -92,8 +92,8 @@ public class Git {
 
 		// get tree object
 		System.out.println("Tree SHA: " + commit.getTreeSHA());
-		Tree tree = new Tree(commit.getTreeSHA(), "root", true);
-
+		Tree tree = new Tree(commit.getTreeSHA(), "root");
+		tree.restore();
 		// update HEAD
 		GitUtils.writeToFile(HEAD_PATH, commitSHA);
 
