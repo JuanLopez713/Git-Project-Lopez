@@ -1,57 +1,87 @@
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 // Handles writing and removing from index file
 // Git class modifies the directory correctly
 // Index handles whatever directory its been given
 public class Index {
-	public static String filePath = "tree";
+	private static String REFS_FOLDER = "refs";
+	private static String INDEX_PATH = "refs/index";
 
-	public static void add(String fileName, String sha1Hash) throws IOException {
-		// Grab file contents and parse
-		HashMap<String, String> indexMap = GitUtils.getHashMapFromTextFile(filePath);
-		String fileSha1 = indexMap.get(fileName);
-		if (fileSha1 == null) {
-			indexMap.put(fileName, sha1Hash);
 
-			// Write file back out
-			GitUtils.writeHashMapToTextFile(indexMap, filePath);
-		}
-		return;
+	enum Type {
+		ADDED, REMOVED, EDITED
+	};
+
+	private static Map<String, Type> indexEntries = new HashMap<String, Type>();
+
+	public static void init() {
+		GitUtils.createDirectory(REFS_FOLDER);
+		GitUtils.createFile(REFS_FOLDER, INDEX_PATH);
 	}
 
-	public static void remove(String fileName) throws IOException{
-		String indexFullFilePath = filePath;
-		System.out.println("File path to hash = " + indexFullFilePath);
-		// Grab file contents and parse
-		HashMap<String, String> indexMap = GitUtils.getHashMapFromTextFile(indexFullFilePath);
-	
-		String cleanFileName = fileName;
-		System.out.println("File path to hash = " + cleanFileName);
-		String fileSha1 = indexMap.get(cleanFileName);
-		System.out.println("File path to hash = " + fileSha1);
-		if (fileSha1 != null) {
+	public static void add(String filePath) throws IOException {
+		indexEntries.put(filePath, Type.ADDED);
+		updateIndexFile();
+	}
 
-			indexMap.remove(cleanFileName);
+	public static void remove(String filePath) throws IOException {
+		indexEntries.put(filePath, Type.REMOVED);
+		updateIndexFile();
+	}
 
-			// Write file back out
-			GitUtils.writeHashMapToTextFile(indexMap, indexFullFilePath);
-			String sha1FileName = "objects/" + fileSha1;
-
-			// Delete file from disk
-			File sha1FileToDelete = new File(sha1FileName);
-			if (sha1FileToDelete.delete()) {
-				System.out.println("Deleted the file: " + sha1FileToDelete.getName());
-			} else {
-				System.out.println("Failed to delete the file.");
-			}
-		}
-		return;
+	public static void edit(String filePath) throws IOException {
+		indexEntries.put(filePath, Type.EDITED);
+		updateIndexFile();
 	}
 
 	public static void resetIndexFile() throws IOException {
-		GitUtils.deleteFile(filePath);
-		GitUtils.createFile("", filePath);
+		GitUtils.deleteFile(INDEX_PATH);
+		GitUtils.createFile(REFS_FOLDER, INDEX_PATH);
+		indexEntries = new HashMap<String, Type>();
 	}
+
+	public static void updateIndexFile() {
+		/* iterates through indexEntries */
+		init();
+		String entry = "";
+		for (Map.Entry<String, Type> indexEntry : indexEntries.entrySet()) {
+
+			// creating entry
+			entry += indexEntry.getValue() + "* " + indexEntry.getKey() + "\n";
+
+		}
+		entry = entry.substring(0, entry.length() - 1);
+		System.out.println("Entry : " + entry);
+		try {
+			GitUtils.writeToFile(INDEX_PATH, entry);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void commitInstructions() {
+		for (Map.Entry<String, Type> indexEntry : indexEntries.entrySet()) {
+
+			switch (indexEntry.getValue()) {
+				case ADDED:
+
+					break;
+
+				case REMOVED:
+
+					break;
+
+				case EDITED:
+
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
+
 }

@@ -1,109 +1,114 @@
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class Git {
+
+	public static final String OBJECTS_FOLDER = "objects";
+	public static final String REFS_FOLDER = "refs";
+	public static final String HEAD = "HEAD";
+	public static final String HEAD_PATH = "refs/HEAD";
+	public static final String INDEX = "index";
+	public static final String INDEX_PATH = "refs/index";
+	public static Tree tree;
+
 	public Git() {
 
 	}
 
-	public static void init() {
+	public static void init() throws IOException {
 		// initialize a Git directories
 		GitUtils.createDirectory("objects");
 		GitUtils.createDirectory("refs");
 
 		// initialize Git files
-		GitUtils.createFile("", "HEAD");
-	}
-
-	public static void add(String fileName) throws IOException {
-
-		String entry = "added* " + fileName;
-		createIndexFile();
-		GitUtils.appendToFile("index", entry);
+		GitUtils.createFile(REFS_FOLDER, HEAD);
+		// Index.init();
+		tree = new Tree();
 
 	}
 
-	public static void remove(String fileName) throws IOException {
-		String entry = "removed* " + fileName;
-		createIndexFile();
-		GitUtils.appendToFile("index", entry);
-	}
-
-	public static void edit(String fileName) throws IOException {
-		String entry = "edited* " + fileName;
-		createIndexFile();
-		GitUtils.appendToFile("index", entry);
-
-	}
-
-	public static void reset() throws IOException {
-		GitUtils.deleteFile("index");
-		GitUtils.createFile("", "index");
-	}
-
-	public static void createIndexFile() {
-		if (!GitUtils.doesFileExist("index")) {
-			GitUtils.createFile("", "index");
-		}
-	}
-
-	public static void commit(String author, String summary) throws IOException {
-		ArrayList<String> index = GitUtils.readFileToArrayListOfStrings("index");
-
-		Tree tree = new Tree();
-		for (String entry : index) {
-			if (entry.contains("added*")) {
-
-				String fileName = getFileName(entry);
-				System.out.println(fileName);
-				if (!GitUtils.doesFileExist(fileName)) {
-					throw new IOException("File does not exist");
-				}
-				if (GitUtils.isDirectory(fileName)) {
-					tree.addDirectory(fileName);
-				} else {
-					tree.addFile(fileName);
-				}
-			}
-			if (entry.contains("edited*")) {
-				String fileName = getFileName(entry);
-				if (!GitUtils.doesFileExist(fileName)) {
-					throw new IOException("File does not exist");
-				}
-				tree.remove(fileName);
-				tree.addFile(fileName);
-			}
-			if (entry.contains("removed*")) {
-				String fileName = getFileName(entry);
-				tree.remove(fileName);
-				GitUtils.deleteFile(fileName);
-			}
-		}
-		String parentSHA = GitUtils.readFileToString("HEAD");
-		Commit commit = new Commit(tree.getSHA1(), parentSHA, author, summary);
-		GitUtils.writeToFile("HEAD", commit.getSHA1());
-		reset();
-		
-	}
-
+	// getters
 	public static String getFileName(String entry) {
 		String[] entryArr = entry.split("\\*");
-		String fileName = entryArr[1].trim();
+		String fileName = entryArr[entryArr.length - 1].trim();
 		return fileName;
 	}
 
-	/*
-	 * Handles deletion of files from the file system
-	 * deleted: src/git/Tree.java
-	 */
-	public static void checkout(String commitSHA) {
+	public static String getEntryType(String entry) {
+		String[] entryArr = entry.split("\\*");
+		String entryType = entryArr[0].trim();
+		return entryType;
+	}
+
+	// methods: add, remove, edit
+
+	public static void add(String filePath) throws IOException {
+		if (!GitUtils.doesFileExist(filePath)) {
+			throw new IOException("The file " + filePath + " you are trying to add does not exist!");
+		}
+		// Index.add(filePath);
+		tree.add(filePath);
 
 	}
 
-	public static void cleanUp(){
-		GitUtils.deleteFile("commit");
-		GitUtils.deleteFile("tree");
-		GitUtils.deleteFile("index");
+	public static void remove(String filePath) throws IOException {
+		if (!GitUtils.doesFileExist(filePath)) {
+			throw new IOException("The file " + filePath + " you are trying to remove does not exist!");
+		}
+		// Index.remove(filePath);
+		tree.remove(filePath);
+
 	}
 
+	// methods:
+
+	public static void commit(String author, String summary) throws IOException {
+		// save Tree blob
+		tree.saveTreeFile();
+		Blob treeBlob = tree.makeTreeBlob();
+
+		// get parent commit SHA
+		String parentCommitSHA = GitUtils.readFileToString(HEAD_PATH);
+
+		// create Commit object
+		Commit commit = new Commit(treeBlob.getSHA1(), parentCommitSHA, author, summary);
+		commit.saveCommitFile();
+
+		// save Commit Blob
+		Blob commitBlob = commit.makeCommitBlob();
+
+		// update HEAD
+		GitUtils.writeToFile(HEAD_PATH, commitBlob.getSHA1());
+
+		// clean up
+		tree.deleteTreeFile();
+		commit.deleteCommitFile();
+
+	}
+
+	public static void checkout(String commitSHA) throws IOException {
+
+		// get commit object
+		Commit commit = new Commit(commitSHA);
+
+		// get tree object
+		System.out.println("Tree SHA: " + commit.getTreeSHA());
+		Tree tree = new Tree(commit.getTreeSHA(), "root", true);
+
+		// update HEAD
+		GitUtils.writeToFile(HEAD_PATH, commitSHA);
+
+	}
+
+	// methods: utilities
+
+	public static void createIndexFile() {
+		if (!GitUtils.doesFileExist(INDEX_PATH)) {
+			GitUtils.createFile(REFS_FOLDER, INDEX);
+		}
+	}
+
+	public static void reset() throws IOException {
+		GitUtils.deleteFile(INDEX_PATH);
+		GitUtils.createFile(REFS_FOLDER, INDEX);
+	}
 }

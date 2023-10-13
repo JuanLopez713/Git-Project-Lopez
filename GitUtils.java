@@ -217,7 +217,7 @@ public class GitUtils {
 		return listOfStrings;
 	}
 
-	public static void deleteFile(String file) {
+	public static void  deleteFile(String file) {
 
 		String sha1FileName = file;
 

@@ -25,5 +25,8 @@ replay_pid*
 
 objects/
 refs/
+root/
+testFile/
+refs/
 *.txt
 .DS_Store
