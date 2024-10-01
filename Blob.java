@@ -8,7 +8,7 @@ public class Blob {
 	private String fileSha1;
 	private String fileName;
 	private String fileContents;
-	private String folderPath = "objects";
+	private String folderPath = "git/objects";
 	private String filePath;
 
 	enum Type {

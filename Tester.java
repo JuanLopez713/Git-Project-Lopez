@@ -5,12 +5,12 @@ public class Tester {
     // tree.add("testFile");
 
     //  tree.save();
-   // Git.init();
-  // Git.add("testFile");
+    Git.init();
+    Git.add("testFile.txt");
    // Git.commit("Juan", "First commit");
 
-    String commitSHA = GitUtils.readFileToString("refs/HEAD");
-    Git.checkout(commitSHA);
+    // String commitSHA = GitUtils.readFileToString("refs/HEAD");
+    // Git.checkout(commitSHA);
 
    // Git.edit("testFile/sample.txt");
 

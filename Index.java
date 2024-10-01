@@ -6,8 +6,10 @@ import java.util.Map;
 // Git class modifies the directory correctly
 // Index handles whatever directory its been given
 public class Index {
-	private static String REFS_FOLDER = "refs";
-	private static String INDEX_PATH = "refs/index";
+	private static String GIT_FOLDER = "git/refs";
+	private static String INDEX = "index";
+	private static String INDEX_PATH = "git/index";
+
 
 
 	enum Type {
@@ -17,8 +19,8 @@ public class Index {
 	private static Map<String, Type> indexEntries = new HashMap<String, Type>();
 
 	public static void init() {
-		GitUtils.createDirectory(REFS_FOLDER);
-		GitUtils.createFile(REFS_FOLDER, INDEX_PATH);
+		GitUtils.createDirectory(GIT_FOLDER);
+		GitUtils.createFile(GIT_FOLDER, INDEX);
 	}
 
 	public static void add(String filePath) throws IOException {
@@ -37,19 +39,19 @@ public class Index {
 	}
 
 	public static void resetIndexFile() throws IOException {
-		GitUtils.deleteFile(INDEX_PATH);
-		GitUtils.createFile(REFS_FOLDER, INDEX_PATH);
+		GitUtils.deleteFile(INDEX);
+		GitUtils.createFile(GIT_FOLDER, INDEX);
 		indexEntries = new HashMap<String, Type>();
 	}
 
-	public static void updateIndexFile() {
+	public static void updateIndexFile() throws IOException {
 		/* iterates through indexEntries */
-		init();
+		Git.init();
 		String entry = "";
 		for (Map.Entry<String, Type> indexEntry : indexEntries.entrySet()) {
 
 			// creating entry
-			entry += indexEntry.getValue() + "* " + indexEntry.getKey() + "\n";
+			entry += indexEntry.getValue() + " : blob : " + indexEntry.getKey() + "\n";
 
 		}
 		entry = entry.substring(0, entry.length() - 1);
