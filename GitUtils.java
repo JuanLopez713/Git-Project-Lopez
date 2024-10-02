@@ -7,8 +7,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class GitUtils {
+
+	public static boolean isFile(String fileName) {
+		File file = new File(fileName);
+		return file.isFile();
+	}
+
+	public static boolean isDirectory(String fileName) {
+		File file = new File(fileName);
+		return file.isDirectory();
+	}
 
 	// createDirectory - creates a directory if it does not exist
 	public static void createDirectory(String folderName) {
@@ -57,35 +71,41 @@ public class GitUtils {
 
 	}
 
-	public static String encryptString(String input) {
+	public static String hashFile(String input) {
+		File file = new File(input);
+		if (!file.exists()) {
+			throw new IllegalArgumentException("File not found: " + input);
+		}
+		if (file.isDirectory()) {
+			throw new IllegalArgumentException("File is a directory: " + input);
+		}
+
+		// get file contents
+		String content = readFileToString(input);
+
 		try {
-			// getInstance() method is called with algorithm SHA-1
+			// Create MessageDigest instance for SHA-1
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-			// digest() method is called
-			// to calculate message digest of the input string
-			// returned as array of byte
-			byte[] messageDigest = md.digest(input.getBytes());
+			// Add input bytes to digest
+			byte[] messageDigest = md.digest(content.getBytes());
 
 			// Convert byte array into signum representation
-			BigInteger no = new BigInteger(1, messageDigest);
-
-			// Convert message digest into hex value
-			String hashtext = no.toString(16);
-
-			// Add preceding 0s to make it 32 bit
-			while (hashtext.length() < 40) {
-				hashtext = "0" + hashtext;
+			StringBuilder hexString = new StringBuilder();
+			for (byte b : messageDigest) {
+				// Convert each byte to hex
+				String hex = Integer.toHexString(0xff & b);
+				if (hex.length() == 1)
+					hexString.append('0');
+				hexString.append(hex);
 			}
 
-			// return the HashText
-			return hashtext;
+			// Output the SHA-1 hash
+			return hexString.toString();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
 		}
-
-		// For specifying wrong message digest algorithms
-		catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
+		return null;
 	}
 
 	public static String readFileToString(String fileName) {
@@ -97,6 +117,12 @@ public class GitUtils {
 			e.printStackTrace();
 		}
 		return content;
+	}
+
+	public static void printStringArray(String[] array) {
+		for (String string : array) {
+			System.out.println(string);
+		}
 	}
 
 	public static void deleteFile(String file) {
@@ -117,10 +143,11 @@ public class GitUtils {
 		return file.exists();
 	}
 
-	public static boolean isDirectory(String fileName) {
-		File file = new File(fileName);
-		return file.isDirectory();
+	public static String[] getFiles(String filePath) {
+		File file = new File(filePath);
+		return file.list();
 	}
+
 
 	public static boolean deleteDirectory(String directoryToBeDeleted) {
 		File directoryToDelete = new File(directoryToBeDeleted);
@@ -131,6 +158,41 @@ public class GitUtils {
 			}
 		}
 		return directoryToDelete.delete();
+	}
+
+	// gets the path of the file in the working directory of the project (not absolute)
+	public static String getPath(String fileName) {
+		File file = new File(fileName);
+		Path path = file.toPath();
+		return path.toString();
+	}
+
+	public static Map<String, String> sortByPathDepth(Map<String, String> map) {
+		// Convert map entries to a list
+		List<Map.Entry<String, String>> list = new ArrayList<>(map.entrySet());
+
+		// Sort the list based on the depth of the file path
+		list.sort((entry1, entry2) -> {
+			// Calculate the depth of each path by counting the number of "/"
+			int depth1 = entry1.getValue().split("/").length;
+			int depth2 = entry2.getValue().split("/").length;
+
+			// Sort in descending order (deepest path first)
+			return Integer.compare(depth2, depth1);
+		});
+
+		// Create a new LinkedHashMap to maintain the order of insertion
+		Map<String, String> sortedMap = new LinkedHashMap<>();
+		for (Map.Entry<String, String> entry : list) {
+			sortedMap.put(entry.getKey(), entry.getValue());
+		}
+
+		return sortedMap;
+	}
+
+	public static String[] splitDirectories(String filePath) {
+		
+		return filePath.split("/");
 	}
 
 }

@@ -1,4 +1,6 @@
+import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 public class Git {
 
@@ -9,96 +11,95 @@ public class Git {
 	public static final String HEAD_PATH = "git/HEAD";
 	public static final String INDEX = "index";
 	public static final String INDEX_PATH = "git/index";
-	public static Tree tree;
 
 	public Git() {
 
 	}
 
 	public static void init() throws IOException {
+		// check if Git repository already exists
+		if (GitUtils.doesFileExist(GIT_FOLDER) && GitUtils.doesFileExist(OBJECTS_FOLDER)
+				&& GitUtils.doesFileExist(HEAD_PATH) && GitUtils.doesFileExist(INDEX_PATH)) {
+			System.out.println("Git repository already exists!");
+			return;
+		}
+
 		// initialize a Git directories
 		GitUtils.createDirectory(GIT_FOLDER);
 		GitUtils.createDirectory(OBJECTS_FOLDER);
-		GitUtils.createDirectory(REFS_FOLDER);
+
 
 		// initialize Git files
 		GitUtils.createFile(GIT_FOLDER, HEAD);
 		GitUtils.createFile(GIT_FOLDER, INDEX);
-		// Index.init();
-		tree = new Tree();
 
 	}
 
-	// getters
-	public static String getFileName(String entry) {
-		String[] entryArr = entry.split("\\*");
-		String fileName = entryArr[entryArr.length - 1].trim();
-		return fileName;
-	}
 
-	public static String getEntryType(String entry) {
-		String[] entryArr = entry.split("\\*");
-		String entryType = entryArr[0].trim();
-		return entryType;
-	}
 
-	// methods: add, remove, edit
+	// methods: add and remove
 
-	public static void add(String filePath) throws IOException {
-		if (!GitUtils.doesFileExist(filePath)) {
-			throw new IOException("The file " + filePath + " you are trying to add does not exist!");
+	public static void add(String path) throws IOException {
+		if (!GitUtils.doesFileExist(path)) {
+			throw new IOException("The file " + path + " you are trying to add does not exist!");
 		}
-		 Index.add(filePath);
-		//tree.add(filePath);
-
+		Index.add(path);
 	}
 
 	public static void remove(String filePath) throws IOException {
 		if (!GitUtils.doesFileExist(filePath)) {
-			throw new IOException("The file " + filePath + " you are trying to remove does not exist!");
+			throw new IOException(
+					"The file " + filePath + " you are trying to remove does not exist!");
 		}
-		// Index.remove(filePath);
-		tree.remove(filePath);
-
+		Index.remove(filePath); // to-do: implement remove method
 	}
 
-	// methods:
-
+	// to-do: implement commit method
 	public static void commit(String author, String summary) throws IOException {
-		// save Tree blob
-		tree.saveTreeFile();
-		Blob treeBlob = tree.makeTreeBlob();
+		File file = new File(INDEX_PATH);
+		if (!file.exists()) {
+			throw new IOException(
+					"Index file does not exist. Please add files to index before committing.");
+		}
 
-		// get parent commit SHA
-		String parentCommitSHA = GitUtils.readFileToString(HEAD_PATH);
 
-		// create Commit object
-		Commit commit = new Commit(treeBlob.getSHA1(), parentCommitSHA, author, summary);
-		commit.saveCommitFile();
+		// Index.getIndexEntries();
 
-		// save Commit Blob
-		Blob commitBlob = commit.makeCommitBlob();
+		// return the contents of the index file as an array of strings for every new line
+		String[] indexContents = GitUtils.readFileToString(INDEX_PATH).split("\n");
+		// GitUtils.printStringArray(indexContents);
 
-		// update HEAD
-		GitUtils.writeToFile(HEAD_PATH, commitBlob.getSHA1());
+		// create a blob object for each file in the index
+		Tree tree = new Tree();
+		for (String indexEntry : indexContents) {
+			
+			String[] entry = indexEntry.split(" ");
+			String fileSHA = entry[0];
+			String filePath = entry[1];
+			int length = GitUtils.splitDirectories(filePath).length;
+			String currentFolder = GitUtils.splitDirectories(filePath)[length-2];
+			System.out.println("Current Folder: " + currentFolder);
+			// Blob blob = new Blob(filePath, fileSHA);
+			// blob.save();
+			// if()
+			// tree.add(filePath, fileSHA);
 
-		// clean up
-		tree.deleteTreeFile();
-		commit.deleteCommitFile();
+
+		}
+
+		// create a tree object for the blobs
+
+
 
 	}
 
+	// to-do: implement checkout method
 	public static void checkout(String commitSHA) throws IOException {
 
-		// get commit object
-		Commit commit = new Commit(commitSHA);
+		// get latest commit object sha
 
-		// get tree object
-		System.out.println("Tree SHA: " + commit.getTreeSHA());
-		Tree tree = new Tree(commit.getTreeSHA(), "root");
-		tree.restore();
 		// update HEAD
-		GitUtils.writeToFile(HEAD_PATH, commitSHA);
+		// GitUtils.writeToFile(HEAD_PATH, commitSHA);
 
 	}
 
