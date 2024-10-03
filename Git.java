@@ -70,7 +70,7 @@ public class Git {
 		// GitUtils.printStringArray(indexContents);
 
 		// create a blob object for each file in the index
-		Tree tree = new Tree();
+		Tree root = new Tree();
 		for (String indexEntry : indexContents) {
 			
 			String[] entry = indexEntry.split(" ");

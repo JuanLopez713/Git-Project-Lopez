@@ -1,34 +1,36 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Tree {
 
     private static final Blob.Type TREE = Blob.Type.TREE;
 
-    private String objectFoldePath = "git/objects";
+    private Map<String, String> treeDirectories;
+    private Map<String, String> treeFiles;
+    private String objectFolderPath = "git/objects";
     private String folderPath;
     private String treeFileContents;
-
-    private ArrayList<Blob> treeEntries;
-
 
     // constructors
     public Tree() throws IOException {
 
-        treeEntries = new ArrayList<>();
+        treeDirectories = new HashMap<>();
+        treeFiles = new HashMap<>();
         folderPath = "tree";
 
     }
 
-   
-
     // constructor for restoring TREE files
     public Tree(String folderPath) throws IOException {
 
-        this.treeEntries = new ArrayList<>();
-        this.folderPath = folderPath;
         System.out.println("Creating tree: " + folderPath);
+
+        this.treeDirectories = new HashMap<>();
+        this.treeFiles = new HashMap<>();
+        this.folderPath = folderPath;
 
     }
 
@@ -42,85 +44,85 @@ public class Tree {
 
         // for (String line : treeFileLines) {
 
-        //     String[] lineParts = line.split(":");
+        // String[] lineParts = line.split(":");
 
-        //     if (line.startsWith("tree")) {
-        //         String subFolder = folderPath + "/" + lineParts[2].trim();
-        //         Tree childTree = new Tree(lineParts[1].trim(), subFolder);
-        //         childTree.restore();
+        // if (line.startsWith("tree")) {
+        // String subFolder = folderPath + "/" + lineParts[2].trim();
+        // Tree childTree = new Tree(lineParts[1].trim(), subFolder);
+        // childTree.restore();
 
-        //     } else {
-        //         Blob blob = new Blob(lineParts);
-        //         blob.setFolderPath(folderPath);
-        //         blob.restoreFile();
-        //         treeEntries.add(blob);
+        // } else {
+        // Blob blob = new Blob(lineParts);
+        // blob.setFolderPath(folderPath);
+        // blob.restoreFile();
+        // treeEntries.add(blob);
 
-        //     }
+        // }
 
         // }
     }
 
     // method -> add
-    public void add(String filePath, String fileSHA1) throws IOException {
+    public void add(String sha1, String filePath) throws IOException {
 
         if (!GitUtils.doesFileExist(filePath)) {
             throw new IOException("File does not exist");
         }
 
-        if (GitUtils.isDirectory(filePath)) {
-            addDirectory(filePath, fileSHA1);
-            return;
-        }
+        // if (GitUtils.isDirectory(filePath)) {
+        //     addDirectory(filePath, blob);
+        //     return;
+        // }
 
-        addFile(filePath, fileSHA1);
+        addFile(sha1, filePath);
 
     }
 
     // method -> addFile
-    public void addFile(String filePath, String fileSha1) throws IOException {
+    public void addFile(String sha1, String filePath) throws IOException {
 
         if (!GitUtils.doesFileExist(filePath)) {
             throw new IOException("File does not exist");
         }
-
-        Blob blob = new Blob(filePath, fileSha1, Blob.Type.BLOB);
+        
+        Blob blob = new Blob(filePath, sha1, Blob.Type.BLOB);
         blob.save();
-        treeEntries.add(blob);
+        treeFiles.add(filePath, filePath);
     }
 
     // method -> addDirectory
-    public void addDirectory(String folderName, String fileSha1) throws IOException {
+    public void addDirectory(String folderName, Tree directory) throws IOException {
 
-        if (!GitUtils.isDirectory(folderName)) {
-            throw new IllegalArgumentException("Not a directory");
-        }
+        // if (!GitUtils.isDirectory(folderName)) {
+        //     throw new IllegalArgumentException("Not a directory");
+        // }
 
-        // System.out.println("Adding directory: " + folderName);
+        // // System.out.println("Adding directory: " + folderName);
 
-        String[] files = GitUtils.getFiles(folderName);
-        GitUtils.printStringArray(files);
+        // String[] files = GitUtils.getFiles(folderName);
+        // GitUtils.printStringArray(files);
         // for (String file : files) {
-        //     if (GitUtils.isDirectory(folderName + "/" + file)) {
+        // if (GitUtils.isDirectory(folderName + "/" + file)) {
 
-        //         // build the sub tree and save file
-        //         String subTreeFileName = file.getName();
-        //         String subDirectory = folderName + "/" + subTreeFileName;
-        //         subTreeFileName = file.getName();
+        // // build the sub tree and save file
+        // String subTreeFileName = file.getName();
+        // String subDirectory = folderName + "/" + subTreeFileName;
+        // subTreeFileName = file.getName();
 
-        //         Tree subTree = new Tree(subTreeFileName);
-        //         subTree.addDirectory(subDirectory);
-        //         subTree.saveTreeFile();
+        // Tree subTree = new Tree(subTreeFileName);
+        // subTree.addDirectory(subDirectory);
+        // subTree.saveTreeFile();
 
-        //         // make a blob of the sub tree
-        //         // add blob to the treeEntries
-        //         // delete the sub tree file
-        //         Blob blob = subTree.makeTreeBlob();
-        //         treeEntries.add(blob);
-        //         subTree.deleteTreeFile();
+        // // make a blob of the sub tree
+        // // add blob to the treeEntries
+        // // delete the sub tree file
+        // Blob blob = subTree.makeTreeBlob();
+        // treeEntries.add(blob);
+        // subTree.deleteTreeFile();
 
-        //     } else {
-        //         addFile(folderName + "/" + file.getName());
-        //     }
+        // } else {
+        // addFile(folderName + "/" + file.getName());
+        // }
         // }
 
     }
@@ -138,10 +140,10 @@ public class Tree {
     // method ->
     public void removeBlob(String fileName) {
         // for (Blob blob : treeEntries) {
-        //     if (blob.getFileName().equals(fileName)) {
-        //         treeEntries.remove(blob);
-        //         return;
-        //     }
+        // if (blob.getFileName().equals(fileName)) {
+        // treeEntries.remove(blob);
+        // return;
+        // }
         // }
     }
 
@@ -158,7 +160,7 @@ public class Tree {
     }
 
     public void restoreFiles() throws IOException {
-        for (Blob blob : treeEntries) {
+        for (Blob blob : treeFiles) {
 
             blob.restoreFile();
         }
@@ -166,13 +168,13 @@ public class Tree {
 
     public void saveTreeFile() throws IOException {
         System.out.println("Saving tree: " + folderPath);
-        GitUtils.createFile("", objectFoldePath);
+        GitUtils.createFile("", objectFolderPath);
         String entry = "";
-        for (Blob blob : treeEntries) {
+        for (Blob blob : treeFiles) {
             entry += blob.toString() + "\n";
         }
         entry = entry.substring(0, entry.length() - 1);
-        GitUtils.writeToFile(objectFoldePath, entry);
+        GitUtils.writeToFile(objectFolderPath, entry);
 
     }
 
@@ -181,8 +183,9 @@ public class Tree {
     // returns the blob object
     public Blob makeTreeBlob() throws IOException {
         // if (!GitUtils.doesFileExist(treeFileName)) {
-        //     throw new IOException("Error at makeTreeBlob(): This tree file \"" + treeFileName
-        //             + "\" does not exist!");
+        // throw new IOException("Error at makeTreeBlob(): This tree file \"" +
+        // treeFileName
+        // + "\" does not exist!");
         // }
         // Blob blob = new Blob(treeFileName, TREE, true);
 
