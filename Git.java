@@ -2,12 +2,12 @@ import java.io.IOException;
 
 public class Git {
 
-	public static final String OBJECTS_FOLDER = "objects";
-	public static final String REFS_FOLDER = "refs";
+	public static final String GIT_FOLDER = "git";
+	public static final String OBJECTS_FOLDER = "git/objects";
 	public static final String HEAD = "HEAD";
-	public static final String HEAD_PATH = "refs/HEAD";
+	public static final String HEAD_PATH = "git/HEAD";
 	public static final String INDEX = "index";
-	public static final String INDEX_PATH = "refs/index";
+	public static final String INDEX_PATH = "git/index";
 	public static Tree tree;
 
 	public Git() {
@@ -16,11 +16,11 @@ public class Git {
 
 	public static void init() throws IOException {
 		// initialize a Git directories
-		GitUtils.createDirectory("objects");
-		GitUtils.createDirectory("refs");
+		GitUtils.createDirectory(GIT_FOLDER);
+		GitUtils.createDirectory(OBJECTS_FOLDER);
 
 		// initialize Git files
-		GitUtils.createFile(REFS_FOLDER, HEAD);
+		GitUtils.createFile(GIT_FOLDER, HEAD);
 		// Index.init();
 		tree = new Tree();
 
@@ -43,7 +43,8 @@ public class Git {
 
 	public static void add(String filePath) throws IOException {
 		if (!GitUtils.doesFileExist(filePath)) {
-			throw new IOException("The file " + filePath + " you are trying to add does not exist!");
+			throw new IOException(
+					"The file " + filePath + " you are trying to add does not exist!");
 		}
 		// Index.add(filePath);
 		tree.add(filePath);
@@ -52,7 +53,8 @@ public class Git {
 
 	public static void remove(String filePath) throws IOException {
 		if (!GitUtils.doesFileExist(filePath)) {
-			throw new IOException("The file " + filePath + " you are trying to remove does not exist!");
+			throw new IOException(
+					"The file " + filePath + " you are trying to remove does not exist!");
 		}
 		// Index.remove(filePath);
 		tree.remove(filePath);

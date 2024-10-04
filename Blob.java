@@ -1,5 +1,5 @@
 
-// Blobs store either data or a link to 
+// Blobs store either data or a link to
 
 import java.io.IOException;
 
@@ -8,7 +8,7 @@ public class Blob {
 	private String fileSha1;
 	private String fileName;
 	private String fileContents;
-	private String folderPath = "objects";
+	private String objectDirectoryPath = "git/objects";
 	private String filePath;
 
 	enum Type {
@@ -34,10 +34,10 @@ public class Blob {
 		// Get fileContents from file
 		this.fileContents = GitUtils.readFileToString(fileName);
 
-		if(type == Type.TREE) {
+		if (type == Type.TREE) {
 			this.fileName = this.fileName.substring(1);
 		}
-		this.filePath = folderPath + "/" + fileName;
+		this.filePath = objectDirectoryPath + "/" + fileName;
 
 		// Create file hash
 		this.fileSha1 = GitUtils.encryptString(fileContents);
@@ -55,21 +55,21 @@ public class Blob {
 
 		this.fileSha1 = fileLines[1].trim();
 		this.fileName = fileLines[2].trim();
-		this.filePath = folderPath + "/" + fileSha1;
+		this.filePath = objectDirectoryPath + "/" + fileSha1;
 		this.fileContents = GitUtils.readFileToString(filePath);
 	}
 
 	// Save file to disk
 	public void save() throws IOException {
-		GitUtils.createDirectory(folderPath);
-		this.filePath = GitUtils.createFile(folderPath, fileSha1);
+		GitUtils.createDirectory(objectDirectoryPath);
+		this.filePath = GitUtils.createFile(objectDirectoryPath, fileSha1);
 		GitUtils.writeToFile(filePath, fileContents);
 	}
 
 
 	public void restoreFile() throws IOException {
-		GitUtils.createDirectory(folderPath);
-		this.filePath = GitUtils.createFile(folderPath, fileName);
+		GitUtils.createDirectory(objectDirectoryPath);
+		this.filePath = GitUtils.createFile(objectDirectoryPath, fileName);
 		GitUtils.writeToFile(filePath, fileContents);
 	}
 	// getters
@@ -103,21 +103,21 @@ public class Blob {
 		this.type = type;
 	}
 
-	public void setFolderPath(String folderPath) {
-		this.folderPath = folderPath;
+	public void setObjectDirectoryPath(String folderPath) {
+		this.objectDirectoryPath = folderPath;
 	}
 
 	// inherited methods
 	public String toString() {
 		switch (type) {
 			case BLOB:
-				return "blob : " + fileSha1 + " : " + cleanUpFileName();
+				return "blob " + fileSha1 + " " + cleanUpFileName();
 			case TREE:
-				return "tree : " + fileSha1 + " : " + cleanUpFileName();
+				return "tree " + fileSha1 + " " + cleanUpFileName();
 			case COMMIT:
 				return fileSha1;
 			default:
-				return "blob : " + fileSha1 + " : " + cleanUpFileName();
+				return "blob " + fileSha1 + " " + cleanUpFileName();
 		}
 
 	}

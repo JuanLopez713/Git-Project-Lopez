@@ -57,7 +57,7 @@ public class Tree {
 
             } else {
                 Blob blob = new Blob(lineParts);
-                blob.setFolderPath(folderPath);
+                blob.setObjectDirectoryPath(folderPath);
                 blob.restoreFile();
                 treeEntries.add(blob);
 
@@ -187,7 +187,8 @@ public class Tree {
     // returns the blob object
     public Blob makeTreeBlob() throws IOException {
         if (!GitUtils.doesFileExist(treeFileName)) {
-            throw new IOException("Error at makeTreeBlob(): This tree file \"" + treeFileName + "\" does not exist!");
+            throw new IOException("Error at makeTreeBlob(): This tree file \"" + treeFileName
+                    + "\" does not exist!");
         }
         Blob blob = new Blob(treeFileName, TREE, true);
 
