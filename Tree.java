@@ -70,8 +70,8 @@ public class Tree {
         }
 
         // if (GitUtils.isDirectory(filePath)) {
-        //     addDirectory(filePath, blob);
-        //     return;
+        // addDirectory(filePath, blob);
+        // return;
         // }
 
         addFile(sha1, filePath);
@@ -84,17 +84,15 @@ public class Tree {
         if (!GitUtils.doesFileExist(filePath)) {
             throw new IOException("File does not exist");
         }
-        
-        Blob blob = new Blob(filePath, sha1, Blob.Type.BLOB);
-        blob.save();
-        treeFiles.add(filePath, filePath);
+
+        treeFiles.put(sha1, filePath);
     }
 
     // method -> addDirectory
     public void addDirectory(String folderName, Tree directory) throws IOException {
 
         // if (!GitUtils.isDirectory(folderName)) {
-        //     throw new IllegalArgumentException("Not a directory");
+        // throw new IllegalArgumentException("Not a directory");
         // }
 
         // // System.out.println("Adding directory: " + folderName);
@@ -160,21 +158,21 @@ public class Tree {
     }
 
     public void restoreFiles() throws IOException {
-        for (Blob blob : treeFiles) {
+        // for (Blob blob : treeFiles) {
 
-            blob.restoreFile();
-        }
+        // blob.restoreFile();
+        // }
     }
 
     public void saveTreeFile() throws IOException {
-        System.out.println("Saving tree: " + folderPath);
-        GitUtils.createFile("", objectFolderPath);
-        String entry = "";
-        for (Blob blob : treeFiles) {
-            entry += blob.toString() + "\n";
-        }
-        entry = entry.substring(0, entry.length() - 1);
-        GitUtils.writeToFile(objectFolderPath, entry);
+        // System.out.println("Saving tree: " + folderPath);
+        // GitUtils.createFile("", objectFolderPath);
+        // String entry = "";
+        // for (Blob blob : treeFileContents) {
+        // entry += blob.toString() + "\n";
+        // }
+        // entry = entry.substring(0, entry.length() - 1);
+        // GitUtils.writeToFile(objectFolderPath, entry);
 
     }
 
@@ -197,5 +195,7 @@ public class Tree {
     public void deleteTreeFile() {
         GitUtils.deleteFile(folderPath);
     }
+
+
 
 }

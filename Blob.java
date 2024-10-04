@@ -8,6 +8,11 @@ public class Blob {
 	private String fileSha;
 	private String filePath;
 	private String fileContents;
+	private Type type;
+
+	public enum Type {
+		BLOB, TREE, COMMIT
+	}
 
 	// constructors
 	public Blob() throws IOException {
@@ -23,6 +28,8 @@ public class Blob {
 
 		// Get fileContents from file
 		this.fileContents = GitUtils.readFileToString(filePath);
+
+		this.type = Type.BLOB;
 
 	}
 
@@ -79,5 +86,28 @@ public class Blob {
 
 	public void updateHead() throws IOException {
 		GitUtils.writeToFile("HEAD", this.getSHA1());
+	}
+
+	public static void createBlob(String filePath) throws IOException {
+
+		if (GitUtils.isDirectory(filePath)) {
+			Tree tree = new Tree(filePath);
+			String[] files = GitUtils.getFiles(filePath);
+			for (String file : files) {
+				String relativePath = filePath + "/" + file;
+				String fileHash = GitUtils.hashFile(relativePath);
+				Blob blobFile = new Blob(fileHash, relativePath);
+				tree.add(blobFile.getSHA1(), relativePath);
+
+			}
+			tree.save();
+
+		} else {
+			String fileHash = GitUtils.hashFile(filePath);
+			Blob blob = new Blob(fileHash, filePath);
+			blob.save();
+
+		}
+
 	}
 }

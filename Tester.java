@@ -7,7 +7,7 @@ public class Tester {
     // tree.save();
     Git.init();
     Git.add("testFolder");
-    Git.commit("Juan", "First commit");
+   // Git.commit("Juan", "First commit");
 
     // System.out.println(GitUtils.hashFile("testFolder/3.txt"));
     // Git.commit("Juan", "First commit");

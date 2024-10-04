@@ -26,6 +26,7 @@ public class Index {
 			for (String file : files) {
 				addFilesToIndex(filePath + "/" + file);
 			}
+			
 		} else {
 			// get the hash of the file
 			String hash = GitUtils.hashFile(filePath);

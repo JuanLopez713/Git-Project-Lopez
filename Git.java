@@ -12,10 +12,6 @@ public class Git {
 	public static final String INDEX = "index";
 	public static final String INDEX_PATH = "git/index";
 
-	public Git() {
-
-	}
-
 	public static void init() throws IOException {
 		// check if Git repository already exists
 		if (GitUtils.doesFileExist(GIT_FOLDER) && GitUtils.doesFileExist(OBJECTS_FOLDER)
@@ -44,6 +40,8 @@ public class Git {
 			throw new IOException("The file " + path + " you are trying to add does not exist!");
 		}
 		Index.add(path);
+		Blob.createBlob(path);
+
 	}
 
 	public static void remove(String filePath) throws IOException {
@@ -81,9 +79,7 @@ public class Git {
 			System.out.println("Current Folder: " + currentFolder);
 			// Blob blob = new Blob(filePath, fileSHA);
 			// blob.save();
-			// if()
-			// tree.add(filePath, fileSHA);
-
+			
 
 		}
 
