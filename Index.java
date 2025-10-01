@@ -11,38 +11,51 @@ public class Index {
 
 	public static void stage(String filePath) throws IOException {
 		validateStageInput(filePath);
-
+		// Prepare the path, compute the hash, read the index content
 		String normalizedPath = normalizePath(filePath);
 		String fileHash = computeFileHash(filePath);
+		String indexContent = readIndexContent();
 
-		String existing = readIndexContent();
-		if (isEmpty(existing)) {
+		// If the index is empty, append the entry and create the blob
+		if (GitUtils.isEmpty(indexContent)) {
 			appendIndexEntry(fileHash, normalizedPath);
 			Git.createBlob(fileHash, normalizedPath);
 			return;
 		}
 
-		UpdateResult result = buildUpdatedIndex(existing, normalizedPath, fileHash);
-		if (result.upToDate) {
+		// If the index is not empty, build the updated index
+		// ResultUpdate is a record that contains a boolean if the entry is found, a boolean if the entry was already up to date, and a String of the updated index content
+		ResultUpdate result = buildUpdatedIndex(indexContent, normalizedPath, fileHash);
+
+		// If the entry is up to date, return
+		if (result.entryUpToDate()) {
 			return;
 		}
-		if (result.found) {
-			writeIndexContent(result.updatedContent);
+
+		// If the entry is found (and not up to date), update the entry
+		// Otherwise, append the new entry
+		if (result.entryFound()) {
+			writeIndexContent(result.updatedIndexContent());
 		} else {
 			appendIndexEntry(fileHash, normalizedPath);
 		}
+
+		// Create the blob
 		Git.createBlob(fileHash, normalizedPath);
 	}
 
 	public static void unstage(String filePath) throws IOException {
+		// Prepare the path, read the index content
 		String normalizedPath = normalizePath(filePath);
+		String indexContent = readIndexContent();
 
-		String content = readIndexContent();
-		if (isEmpty(content)) {
+		// If the index is empty, return
+		if (GitUtils.isEmpty(indexContent)) {
 			return;
 		}
 
-		String updated = removePathFromIndex(content, normalizedPath);
+		// Remove the path from the index content, and update the index
+		String updated = removePathFromIndex(indexContent, normalizedPath);
 		writeIndexContent(updated);
 	}
 
@@ -52,18 +65,6 @@ public class Index {
 	}
 
 	// ===== Helper types and methods =====
-
-	private static class UpdateResult {
-		final boolean found;
-		final boolean upToDate;
-		final String updatedContent;
-
-		UpdateResult(boolean found, boolean upToDate, String updatedContent) {
-			this.found = found;
-			this.upToDate = upToDate;
-			this.updatedContent = updatedContent;
-		}
-	}
 
 	private static void validateStageInput(String filePath) throws IOException {
 		if (GitUtils.isDirectory(filePath)) {
@@ -86,10 +87,6 @@ public class Index {
 		return GitUtils.readFileToString(INDEX_PATH);
 	}
 
-	private static boolean isEmpty(String s) {
-		return s == null || s.isEmpty();
-	}
-
 	private static void appendIndexEntry(String fileHash, String normalizedPath) throws IOException {
 		GitUtils.appendToFile(INDEX_PATH, fileHash + " " + normalizedPath + "\n");
 	}
@@ -98,58 +95,82 @@ public class Index {
 		GitUtils.writeToFile(INDEX_PATH, content);
 	}
 
-	private static UpdateResult buildUpdatedIndex(String existing, String normalizedPath, String fileHash) {
-		boolean found = false;
-		boolean upToDate = false;
-		StringBuilder updated = new StringBuilder();
-
-		String[] lines = existing.split("\n");
-		for (String line : lines) {
-			if (line == null || line.isEmpty()) {
-				continue;
-			}
-			int sep = line.indexOf(' ');
-			if (sep <= 0) {
-				updated.append(line).append('\n');
-				continue;
-			}
-			String existingHash = line.substring(0, sep);
-			String path = line.substring(sep + 1);
-			if (path.equals(normalizedPath)) {
-				found = true;
-				if (existingHash.equals(fileHash)) {
-					upToDate = true;
-					// Preserve original line in case we write the file for other reasons
-					updated.append(line).append('\n');
-				} else {
-					updated.append(fileHash).append(' ').append(normalizedPath).append('\n');
-				}
-			} else {
-				updated.append(line).append('\n');
-			}
-		}
-
-		return new UpdateResult(found, upToDate, updated.toString());
+	private static record ResultUpdate(boolean entryFound, boolean entryUpToDate, String updatedIndexContent) {
 	}
 
-	private static String removePathFromIndex(String content, String normalizedPath) {
-		StringBuilder updated = new StringBuilder();
-		String[] lines = content.split("\n");
-		for (String line : lines) {
-			if (line == null || line.isEmpty()) {
+	private static ResultUpdate buildUpdatedIndex(String existingIndexContent, String normalizedPath, String fileHash) {
+		// Initialize the result variables
+		boolean found = false;
+		boolean upToDate = false;
+		StringBuilder updatedIndexContent = new StringBuilder();
+
+		// Split the index content into entries
+		String[] entries = existingIndexContent.split("\n");
+		for (String entry : entries) {
+			if (GitUtils.isEmpty(entry)) {
 				continue;
 			}
-			int sep = line.indexOf(' ');
-			if (sep <= 0) {
-				updated.append(line).append('\n');
+			// If the entry is not valid (missing separator),
+			// append it to the updated index content
+			int separatorIndex = entry.indexOf(' ');
+			if (separatorIndex <= 0) {
+				updatedIndexContent.append(entry).append('\n');
 				continue;
 			}
-			String path = line.substring(sep + 1);
-			if (!path.equals(normalizedPath)) {
-				updated.append(line).append('\n');
+			// Get the entry hash and path
+			String entryHash = entry.substring(0, separatorIndex);
+			String entryPath = entry.substring(separatorIndex + 1);
+
+			// If the entry path is the same as the normalized path, it has been found
+			// and if the entry hash is the same as the file hash, it is up to date
+			// so append it to the updated index content, otherwise append the new entry
+			if (entryPath.equals(normalizedPath)) {
+				found = true;
+				if (entryHash.equals(fileHash)) {
+					upToDate = true;
+					updatedIndexContent.append(entry).append('\n');
+				} else {
+
+					updatedIndexContent.append(fileHash).append(' ').append(normalizedPath).append('\n');
+				}
+			} else {
+				// If the entry path is not the same as the normalized path,
+				// append it to the updated index content
+				updatedIndexContent.append(entry).append('\n');
 			}
 		}
-		return updated.toString();
+
+		return new ResultUpdate(found, upToDate, updatedIndexContent.toString());
+	}
+
+	private static String removePathFromIndex(String existingIndexContent, String normalizedPath) {
+		// Initialize the result variables
+		StringBuilder updatedIndexContent = new StringBuilder();
+
+		// Split the index content into entries
+		String[] entries = existingIndexContent.split("\n");
+		for (String entry : entries) {
+			if (GitUtils.isEmpty(entry)) {
+				continue;
+			}
+			// If the entry is not valid (missing separator),
+			// append it to the updated index content
+			int separatorIndex = entry.indexOf(' ');
+			if (separatorIndex <= 0) {
+				updatedIndexContent.append(entry).append('\n');
+				continue;
+			}
+
+			// If the entry path is not the same as the normalized path,
+			// append it to the updated index content
+			String entryPath = entry.substring(separatorIndex + 1);
+			if (!entryPath.equals(normalizedPath)) {
+
+				updatedIndexContent.append(entry).append('\n');
+			}
+
+		}
+		return updatedIndexContent.toString();
 	}
 
 }

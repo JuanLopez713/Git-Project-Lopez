@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.Map;
 
 public class GitUtils {
+	
+	public static boolean isEmpty(String s) {
+		return s == null || s.isEmpty();
+	}
 
 	public static boolean isFile(String fileName) {
 		File file = new File(fileName);
