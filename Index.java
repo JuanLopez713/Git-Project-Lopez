@@ -1,6 +1,4 @@
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 // Handles writing and removing from index file
 // Git class modifies the directory correctly
@@ -11,63 +9,147 @@ public class Index {
 	private static final String INDEX = "index";
 	private static final String INDEX_PATH = "git/index";
 
-	private static Map<String, String> indexEntries = new HashMap<>();
+	public static void stage(String filePath) throws IOException {
+		validateStageInput(filePath);
 
+		String normalizedPath = normalizePath(filePath);
+		String fileHash = computeFileHash(filePath);
 
-	public static void add(String filePath) throws IOException {
-		addFilesToIndex(filePath); // Recursively process files
-		writeToIndexFile(); // Write to index once after all files are added
-	}
-
-	public static void addFilesToIndex(String filePath) throws IOException {
-		if (GitUtils.isDirectory(filePath)) {
-			// get all files in directory
-			String[] files = GitUtils.getFiles(filePath);
-			for (String file : files) {
-				addFilesToIndex(filePath + "/" + file);
-			}
-		} else {
-			// get the hash of the file
-			String hash = GitUtils.hashFile(filePath);
-			String path = GitUtils.getPath(filePath);
-			indexEntries.put(hash, path);
+		String existing = readIndexContent();
+		if (isEmpty(existing)) {
+			appendIndexEntry(fileHash, normalizedPath);
+			Git.createBlob(fileHash, normalizedPath);
+			return;
 		}
+
+		UpdateResult result = buildUpdatedIndex(existing, normalizedPath, fileHash);
+		if (result.upToDate) {
+			return;
+		}
+		if (result.found) {
+			writeIndexContent(result.updatedContent);
+		} else {
+			appendIndexEntry(fileHash, normalizedPath);
+		}
+		Git.createBlob(fileHash, normalizedPath);
 	}
 
-	public static void remove(String filePath) throws IOException {
+	public static void unstage(String filePath) throws IOException {
+		String normalizedPath = normalizePath(filePath);
 
+		String content = readIndexContent();
+		if (isEmpty(content)) {
+			return;
+		}
+
+		String updated = removePathFromIndex(content, normalizedPath);
+		writeIndexContent(updated);
 	}
 
 	public static void resetIndexFile() {
-		GitUtils.deleteFile(INDEX);
+		GitUtils.deleteFile(INDEX_PATH);
 		GitUtils.createFile(GIT_FOLDER, INDEX);
-		indexEntries = new HashMap<>();
 	}
 
-	public static void writeToIndexFile() throws IOException {
-		/* iterates through indexEntries */
-		// Git.init();
-		String entry = "";
-		indexEntries = GitUtils.sortByPathDepth(indexEntries);
-		for (Map.Entry<String, String> indexEntry : indexEntries.entrySet()) {
+	// ===== Helper types and methods =====
 
-			// creating entry
-			entry += indexEntry.getKey() + " " + indexEntry.getValue() + "\n";
+	private static class UpdateResult {
+		final boolean found;
+		final boolean upToDate;
+		final String updatedContent;
 
+		UpdateResult(boolean found, boolean upToDate, String updatedContent) {
+			this.found = found;
+			this.upToDate = upToDate;
+			this.updatedContent = updatedContent;
 		}
-		// entry = entry.substring(0, entry.length() - 1); // remove last newline
-		System.out.println("Index Snapshot: \n" + entry);
-		try {
-			GitUtils.writeToFile(INDEX_PATH, entry);
-		} catch (IOException e) {
-			System.out.println("Failed to write to index file");
+	}
+
+	private static void validateStageInput(String filePath) throws IOException {
+		if (GitUtils.isDirectory(filePath)) {
+			throw new IOException("Staging directories is not allowed. Provide a file path.");
+		}
+		if (!GitUtils.isFile(filePath)) {
+			throw new IOException("The file " + filePath + " does not exist or is not a regular file.");
+		}
+	}
+
+	private static String normalizePath(String filePath) {
+		return GitUtils.getPath(filePath);
+	}
+
+	private static String computeFileHash(String filePath) {
+		return GitUtils.hashFile(filePath);
+	}
+
+	private static String readIndexContent() {
+		return GitUtils.readFileToString(INDEX_PATH);
+	}
+
+	private static boolean isEmpty(String s) {
+		return s == null || s.isEmpty();
+	}
+
+	private static void appendIndexEntry(String fileHash, String normalizedPath) throws IOException {
+		GitUtils.appendToFile(INDEX_PATH, fileHash + " " + normalizedPath + "\n");
+	}
+
+	private static void writeIndexContent(String content) throws IOException {
+		GitUtils.writeToFile(INDEX_PATH, content);
+	}
+
+	private static UpdateResult buildUpdatedIndex(String existing, String normalizedPath, String fileHash) {
+		boolean found = false;
+		boolean upToDate = false;
+		StringBuilder updated = new StringBuilder();
+
+		String[] lines = existing.split("\n");
+		for (String line : lines) {
+			if (line == null || line.isEmpty()) {
+				continue;
+			}
+			int sep = line.indexOf(' ');
+			if (sep <= 0) {
+				updated.append(line).append('\n');
+				continue;
+			}
+			String existingHash = line.substring(0, sep);
+			String path = line.substring(sep + 1);
+			if (path.equals(normalizedPath)) {
+				found = true;
+				if (existingHash.equals(fileHash)) {
+					upToDate = true;
+					// Preserve original line in case we write the file for other reasons
+					updated.append(line).append('\n');
+				} else {
+					updated.append(fileHash).append(' ').append(normalizedPath).append('\n');
+				}
+			} else {
+				updated.append(line).append('\n');
+			}
 		}
 
+		return new UpdateResult(found, upToDate, updated.toString());
 	}
 
-	public static Map<String, String> getIndexEntries() {
-		return indexEntries;
+	private static String removePathFromIndex(String content, String normalizedPath) {
+		StringBuilder updated = new StringBuilder();
+		String[] lines = content.split("\n");
+		for (String line : lines) {
+			if (line == null || line.isEmpty()) {
+				continue;
+			}
+			int sep = line.indexOf(' ');
+			if (sep <= 0) {
+				updated.append(line).append('\n');
+				continue;
+			}
+			String path = line.substring(sep + 1);
+			if (!path.equals(normalizedPath)) {
+				updated.append(line).append('\n');
+			}
+		}
+		return updated.toString();
 	}
-
 
 }

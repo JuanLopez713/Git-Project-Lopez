@@ -1,95 +1,68 @@
-import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 public class Git {
 
-	public static final String GIT_FOLDER = "git";
-	public static final String OBJECTS_FOLDER = "git/objects";
-	public static final String REFS_FOLDER = "git/refs";
+	public static final String GIT_DIRECTORY = "git";
+	public static final String OBJECTS_DIRECTORY = "git/objects";
 	public static final String HEAD = "HEAD";
 	public static final String HEAD_PATH = "git/HEAD";
 	public static final String INDEX = "index";
 	public static final String INDEX_PATH = "git/index";
+	public static final String TEMPFILE = "temp";
 
-	public Git() {
-
-	}
-
+	// initialize Git repository
 	public static void init() throws IOException {
 		// check if Git repository already exists
-		if (GitUtils.doesFileExist(GIT_FOLDER) && GitUtils.doesFileExist(OBJECTS_FOLDER)
+		if (GitUtils.doesFileExist(GIT_DIRECTORY) && GitUtils.doesFileExist(OBJECTS_DIRECTORY)
 				&& GitUtils.doesFileExist(HEAD_PATH) && GitUtils.doesFileExist(INDEX_PATH)) {
 			System.out.println("Git repository already exists!");
 			return;
 		}
 
 		// initialize a Git directories
-		GitUtils.createDirectory(GIT_FOLDER);
-		GitUtils.createDirectory(OBJECTS_FOLDER);
-
+		GitUtils.createDirectory(GIT_DIRECTORY);
+		GitUtils.createDirectory(OBJECTS_DIRECTORY);
 
 		// initialize Git files
-		GitUtils.createFile(GIT_FOLDER, HEAD);
-		GitUtils.createFile(GIT_FOLDER, INDEX);
+		GitUtils.createFile(GIT_DIRECTORY, HEAD);
+		GitUtils.createFile(GIT_DIRECTORY, INDEX);
+		GitUtils.createFile(GIT_DIRECTORY, TEMPFILE);
 
 	}
 
-
-
-	// methods: add and remove
-
-	public static void add(String path) throws IOException {
-		if (!GitUtils.doesFileExist(path)) {
-			throw new IOException("The file " + path + " you are trying to add does not exist!");
+	// Save file to disk
+	public static void createBlob(String fileSha, String filePath) throws IOException {
+		GitUtils.createDirectory(OBJECTS_DIRECTORY);
+		String objectPath = OBJECTS_DIRECTORY + "/" + fileSha;
+		if (GitUtils.doesFileExist(objectPath)) {
+			return; // blob already exists
 		}
-		Index.add(path);
+		GitUtils.createFile(OBJECTS_DIRECTORY, fileSha);
+
+		byte[] data = GitUtils.readAllBytes(filePath);
+		GitUtils.writeBytes(objectPath, data);
 	}
 
+	// add file entry to index
+
+	public static void add(String fileName) throws IOException {
+		if (!GitUtils.doesFileExist(fileName)) {
+			throw new IOException("The file " + fileName + " you are trying to add does not exist!");
+		}
+		Index.stage(fileName);
+	}
+
+	// remove file entry from index
 	public static void remove(String filePath) throws IOException {
 		if (!GitUtils.doesFileExist(filePath)) {
 			throw new IOException(
 					"The file " + filePath + " you are trying to remove does not exist!");
 		}
-		Index.remove(filePath); // to-do: implement remove method
+		Index.unstage(filePath); // to-do: implement remove method
 	}
 
 	// to-do: implement commit method
 	public static void commit(String author, String summary) throws IOException {
-		File file = new File(INDEX_PATH);
-		if (!file.exists()) {
-			throw new IOException(
-					"Index file does not exist. Please add files to index before committing.");
-		}
-
-
-		// Index.getIndexEntries();
-
-		// return the contents of the index file as an array of strings for every new line
-		String[] indexContents = GitUtils.readFileToString(INDEX_PATH).split("\n");
-		// GitUtils.printStringArray(indexContents);
-
-		// create a blob object for each file in the index
-		Tree root = new Tree();
-		for (String indexEntry : indexContents) {
-			
-			String[] entry = indexEntry.split(" ");
-			String fileSHA = entry[0];
-			String filePath = entry[1];
-			int length = GitUtils.splitDirectories(filePath).length;
-			String currentFolder = GitUtils.splitDirectories(filePath)[length-2];
-			System.out.println("Current Folder: " + currentFolder);
-			// Blob blob = new Blob(filePath, fileSHA);
-			// blob.save();
-			// if()
-			// tree.add(filePath, fileSHA);
-
-
-		}
-
-		// create a tree object for the blobs
-
-
 
 	}
 
@@ -99,7 +72,7 @@ public class Git {
 		// get latest commit object sha
 
 		// update HEAD
-		// GitUtils.writeToFile(HEAD_PATH, commitSHA);
+		GitUtils.writeToFile(HEAD_PATH, commitSHA);
 
 	}
 
@@ -107,12 +80,13 @@ public class Git {
 
 	public static void createIndexFile() {
 		if (!GitUtils.doesFileExist(INDEX_PATH)) {
-			GitUtils.createFile(REFS_FOLDER, INDEX);
+			GitUtils.createFile(GIT_DIRECTORY, INDEX);
 		}
 	}
 
 	public static void reset() throws IOException {
 		GitUtils.deleteFile(INDEX_PATH);
-		GitUtils.createFile(REFS_FOLDER, INDEX);
+		GitUtils.createFile(GIT_DIRECTORY, INDEX);
 	}
+
 }

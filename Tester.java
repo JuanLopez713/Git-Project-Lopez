@@ -5,9 +5,19 @@ public class Tester {
     // tree.add("testFile");
 
     // tree.save();
-    Git.init();
-    Git.add("testFolder");
-    Git.commit("Juan", "First commit");
+    // Git.init();
+    // GitUtils.createFile("folder", "test.txt");
+    // GitUtils.writeToFile("folder/test.txt", "Hello, World!");
+
+    Git.add("folder/test.txt");
+
+    GitUtils.createFile("folder", "test2.txt");
+  //  GitUtils.writeToFile("folder/test2.txt", "Hello, World! 2");
+
+    Git.add("folder/test2.txt");
+
+    // Git.add("testFolder");
+    // Git.commit("Juan", "First commit");
 
     // System.out.println(GitUtils.hashFile("testFolder/3.txt"));
     // Git.commit("Juan", "First commit");
@@ -16,7 +26,6 @@ public class Tester {
     // Git.checkout(commitSHA);
 
     // Git.edit("testFile/sample.txt");
-
 
   }
 }
