@@ -4,13 +4,13 @@ public class Tester {
     // Tree tree = new Tree();
     // tree.add("testFile");
 
-    // tree.save();
+    //  tree.save();
     Git.init();
-    Git.add("testFolder");
-   // Git.commit("Juan", "First commit");
+   Git.add("testFolder");
+  //  Git.commit("Juan", "First commit");
 
-    // System.out.println(GitUtils.hashFile("testFolder/3.txt"));
-    // Git.commit("Juan", "First commit");
+    //String commitSHA = GitUtils.readFileToString("refs/HEAD");
+   // Git.checkout(commitSHA);
 
     // String commitSHA = GitUtils.readFileToString("refs/HEAD");
     // Git.checkout(commitSHA);

@@ -51,11 +51,11 @@ public class Tree {
         // Tree childTree = new Tree(lineParts[1].trim(), subFolder);
         // childTree.restore();
 
-        // } else {
-        // Blob blob = new Blob(lineParts);
-        // blob.setFolderPath(folderPath);
-        // blob.restoreFile();
-        // treeEntries.add(blob);
+            } else {
+                Blob blob = new Blob(lineParts);
+                blob.setObjectDirectoryPath(folderPath);
+                blob.restoreFile();
+                treeEntries.add(blob);
 
         // }
 
@@ -180,12 +180,11 @@ public class Tree {
     // makes a blob object of the tree file
     // returns the blob object
     public Blob makeTreeBlob() throws IOException {
-        // if (!GitUtils.doesFileExist(treeFileName)) {
-        // throw new IOException("Error at makeTreeBlob(): This tree file \"" +
-        // treeFileName
-        // + "\" does not exist!");
-        // }
-        // Blob blob = new Blob(treeFileName, TREE, true);
+        if (!GitUtils.doesFileExist(treeFileName)) {
+            throw new IOException("Error at makeTreeBlob(): This tree file \"" + treeFileName
+                    + "\" does not exist!");
+        }
+        Blob blob = new Blob(treeFileName, TREE, true);
 
         // return blob;
         System.out.println("Need to implement makeTreeBlob...");

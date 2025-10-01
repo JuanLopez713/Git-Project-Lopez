@@ -4,8 +4,16 @@
 import java.io.IOException;
 
 public class Blob {
+<<<<<<< HEAD
 	private String objectFolderPath = "git/objects";
 	private String fileSha;
+=======
+
+	private String fileSha1;
+	private String fileName;
+	private String fileContents;
+	private String objectDirectoryPath = "git/objects";
+>>>>>>> updating-index
 	private String filePath;
 	private String fileContents;
 	private Type type;
@@ -29,20 +37,56 @@ public class Blob {
 		// Get fileContents from file
 		this.fileContents = GitUtils.readFileToString(filePath);
 
+<<<<<<< HEAD
 		this.type = Type.BLOB;
 
+=======
+		if (type == Type.TREE) {
+			this.fileName = this.fileName.substring(1);
+		}
+		this.filePath = objectDirectoryPath + "/" + fileName;
+
+		// Create file hash
+		this.fileSha1 = GitUtils.encryptString(fileContents);
+	}
+
+	public Blob(String fileName, Type type, boolean save) throws IOException {
+		this(fileName, type);
+		if (save) {
+			save();
+		}
+	}
+
+	public Blob(String[] fileLines) throws IOException {
+		this.type = Type.BLOB;
+
+		this.fileSha1 = fileLines[1].trim();
+		this.fileName = fileLines[2].trim();
+		this.filePath = objectDirectoryPath + "/" + fileSha1;
+		this.fileContents = GitUtils.readFileToString(filePath);
+>>>>>>> updating-index
 	}
 
 	// Save file to disk
 	public void save() throws IOException {
+<<<<<<< HEAD
 		GitUtils.createDirectory(objectFolderPath);
 		this.filePath = GitUtils.createFile(objectFolderPath, fileSha);
+=======
+		GitUtils.createDirectory(objectDirectoryPath);
+		this.filePath = GitUtils.createFile(objectDirectoryPath, fileSha1);
+>>>>>>> updating-index
 		GitUtils.writeToFile(filePath, fileContents);
 	}
 
 	public void restoreFile() throws IOException {
+<<<<<<< HEAD
 		GitUtils.createDirectory(objectFolderPath);
 		this.filePath = GitUtils.createFile(objectFolderPath, filePath);
+=======
+		GitUtils.createDirectory(objectDirectoryPath);
+		this.filePath = GitUtils.createFile(objectDirectoryPath, fileName);
+>>>>>>> updating-index
 		GitUtils.writeToFile(filePath, fileContents);
 	}
 
@@ -73,12 +117,34 @@ public class Blob {
 		this.fileContents = fileContents;
 	}
 
+<<<<<<< HEAD
 	public void setFolderPath(String folderPath) {
 		this.objectFolderPath = folderPath;
+=======
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public void setObjectDirectoryPath(String folderPath) {
+		this.objectDirectoryPath = folderPath;
+>>>>>>> updating-index
 	}
 
 	// inherited methods
 	public String toString() {
+<<<<<<< HEAD
+=======
+		switch (type) {
+			case BLOB:
+				return "blob " + fileSha1 + " " + cleanUpFileName();
+			case TREE:
+				return "tree " + fileSha1 + " " + cleanUpFileName();
+			case COMMIT:
+				return fileSha1;
+			default:
+				return "blob " + fileSha1 + " " + cleanUpFileName();
+		}
+>>>>>>> updating-index
 
 		return fileSha + " " + filePath;
 

@@ -6,11 +6,11 @@ public class Git {
 
 	public static final String GIT_FOLDER = "git";
 	public static final String OBJECTS_FOLDER = "git/objects";
-	public static final String REFS_FOLDER = "git/refs";
 	public static final String HEAD = "HEAD";
 	public static final String HEAD_PATH = "git/HEAD";
 	public static final String INDEX = "index";
 	public static final String INDEX_PATH = "git/index";
+	public static Tree tree;
 
 	public static void init() throws IOException {
 		// check if Git repository already exists
@@ -23,11 +23,11 @@ public class Git {
 		// initialize a Git directories
 		GitUtils.createDirectory(GIT_FOLDER);
 		GitUtils.createDirectory(OBJECTS_FOLDER);
-
-
 		// initialize Git files
-		GitUtils.createFile(GIT_FOLDER, HEAD);
 		GitUtils.createFile(GIT_FOLDER, INDEX);
+		GitUtils.createFile(GIT_FOLDER, HEAD);
+		// Index.init();
+		tree = new Tree();
 
 	}
 
@@ -35,9 +35,10 @@ public class Git {
 
 	// methods: add and remove
 
-	public static void add(String path) throws IOException {
-		if (!GitUtils.doesFileExist(path)) {
-			throw new IOException("The file " + path + " you are trying to add does not exist!");
+	public static void add(String filePath) throws IOException {
+		if (!GitUtils.doesFileExist(filePath)) {
+			throw new IOException(
+					"The file " + filePath + " you are trying to add does not exist!");
 		}
 		Index.add(path);
 		Blob.createBlob(path);
@@ -103,12 +104,12 @@ public class Git {
 
 	public static void createIndexFile() {
 		if (!GitUtils.doesFileExist(INDEX_PATH)) {
-			GitUtils.createFile(REFS_FOLDER, INDEX);
+			GitUtils.createFile(OBJECTS_FOLDER, INDEX);
 		}
 	}
 
 	public static void reset() throws IOException {
 		GitUtils.deleteFile(INDEX_PATH);
-		GitUtils.createFile(REFS_FOLDER, INDEX);
+		GitUtils.createFile(OBJECTS_FOLDER, INDEX);
 	}
 }
