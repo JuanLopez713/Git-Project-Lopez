@@ -23,7 +23,10 @@
 hs_err_pid*
 replay_pid*
 
-
+git/
+index
+temp
+HEAD
 objects/
 refs/
 root/
