@@ -18,8 +18,8 @@ public class Git {
 		// initialize a Git directories
 		GitUtils.createDirectory(GIT_FOLDER);
 		GitUtils.createDirectory(OBJECTS_FOLDER);
-
 		// initialize Git files
+		GitUtils.createFile(GIT_FOLDER, INDEX);
 		GitUtils.createFile(GIT_FOLDER, HEAD);
 		// Index.init();
 		tree = new Tree();
@@ -105,12 +105,12 @@ public class Git {
 
 	public static void createIndexFile() {
 		if (!GitUtils.doesFileExist(INDEX_PATH)) {
-			GitUtils.createFile(REFS_FOLDER, INDEX);
+			GitUtils.createFile(OBJECTS_FOLDER, INDEX);
 		}
 	}
 
 	public static void reset() throws IOException {
 		GitUtils.deleteFile(INDEX_PATH);
-		GitUtils.createFile(REFS_FOLDER, INDEX);
+		GitUtils.createFile(OBJECTS_FOLDER, INDEX);
 	}
 }
