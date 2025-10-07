@@ -6,53 +6,76 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.FileNotFoundException;
 
 public class Tree {
+
+    // makes the tree files from the directory
+    public static void makeTree(String directoryPath) throws IOException {
+        // makes the file and initializes important items
+        File treeFile = new File(directoryPath);
+        if (!treeFile.exists() || !treeFile.isDirectory()) {
+            throw new FileNotFoundException("Directory not found: " + directoryPath);
+        }
+
+        File[] files = treeFile.listFiles();
+        if (files == null) {
+            throw new IOException("Unable to list files for: " + directoryPath);
+        }
+        StringBuilder treeBuilder = new StringBuilder();
+
+        for (File innerFile : files) {
+            if (innerFile.isDirectory()) {
+                makeTree(innerFile.getPath());
+            } else {
+                treeBuilder.append("blob").append(innerFile.hashCode()).append(innerFile.getName()).append("\n");
+            }
+        }
+
+        String toWrite = treeBuilder.toString();
+
+        File officialTree = new File(Git.OBJECTS_DIRECTORY + "/" + GitUtils.hashFile(toWrite));
+        officialTree.createNewFile();
+
+        try {
+            Files.write(Paths.get(officialTree.getAbsolutePath()), toWrite.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
     // create git/temp with "blob <SHA> <path>" lines from index file
     public static void initializeWorkingListFile() throws IOException {
         String indexContent = GitUtils.readFileToString(Git.INDEX_PATH);
 
-        
-        StringBuilder tempContent = new StringBuilder();
+        // Initialize the working list content by appending "blob <SHA> <path>" lines to
+        // the StringBuilder
+        StringBuilder workingListContent = new StringBuilder();
         if (indexContent != null && !indexContent.isEmpty()) {
-            String[] lines = indexContent.split("\n");
-            for (String line : lines) {
-                if (line == null || line.isEmpty()) {
+
+            // If the entry is empty, continue
+            // If the entry is not empty, append "blob <SHA> <path>" lines to the
+            // StringBuilder
+            String[] entries = indexContent.split("\n");
+            for (String entry : entries) {
+                if (GitUtils.isEmpty(entry)) {
                     continue;
                 }
-                tempContent.append("blob ").append(line).append('\n');
+                workingListContent.append("blob ").append(entry).append('\n');
             }
         }
 
+        // Create the working list file and write the content to it
         GitUtils.createFile(Git.GIT_DIRECTORY, Git.TEMPFILE);
-        GitUtils.writeToFile(Git.GIT_DIRECTORY + "/" + Git.TEMPFILE, tempContent.toString());
-    }
-
-
-    public static void createTreeFile(String directoryPath, String fileNameSHA1) {
-        GitUtils.createFile(directoryPath, fileNameSHA1);
-    }
-
-    public static void add(String filePath, String entry) throws IOException {
-        if (!GitUtils.doesFileExist(filePath)) {
-            throw new IOException("The file " + filePath + " you are trying to add does not exist!");
-        }
-        // the entry should be appended to the tree file
-        GitUtils.appendToFile(filePath, entry);
-    }
-
-    public static void parseIndexFile(String indexFilePath) throws IOException {
-        String indexContent = GitUtils.readFileToString(indexFilePath);
-        String[] entries = indexContent.split("\n");
-        for (String entry : entries) {
-            String[] parts = entry.split(" ");
-            String filePath = parts[1];
-            String sha1 = parts[0];
-        }
+        GitUtils.writeToFile(Git.GIT_DIRECTORY + "/" + Git.TEMPFILE, workingListContent.toString());
     }
 
     public static void buildTreesFromWorkingList() throws IOException {
+        // read the temp file and split it into lines
         String tempPath = Git.GIT_DIRECTORY + "/" + Git.TEMPFILE;
         String content = GitUtils.readFileToString(tempPath);
         if (content == null)
@@ -65,6 +88,7 @@ public class Tree {
             }
         }
 
+        // build the trees from the working list
         while (true) {
             // Always sort by depth (deepest first) each iteration
             lines.sort((a, b) -> Integer.compare(pathDepth(pathOf(a)), pathDepth(pathOf(b))) * -1);
@@ -73,6 +97,7 @@ public class Tree {
                 break;
             }
 
+            // find the max depth of the trees
             int maxDepth = -1;
             for (String line : lines) {
                 String p = pathOf(line);
