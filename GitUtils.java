@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class GitUtils {
-	
+
 	public static boolean isEmpty(String s) {
 		return s == null || s.isEmpty();
 	}
@@ -83,19 +83,24 @@ public class GitUtils {
 	// - Creates parent directories and the file if they do not already exist
 	// - Uses UTF-8 to avoid data loss and to align with readFileToString
 	// - Propagates IOException to let callers handle failures appropriately
-	public static void writeToFile(String fileName, String content) throws IOException {
+	public static void writeToFile(String fileName, String content) {
 
-		Path filePath = Paths.get(fileName);
+		try {
+			Path filePath = Paths.get(fileName);
 
-		ensureParentDirectories(filePath);
+			ensureParentDirectories(filePath);
 
-		// Create or truncate the file and write contents using UTF-8
-		Files.writeString(
-				filePath,
-				content,
-				StandardCharsets.UTF_8,
-				StandardOpenOption.CREATE,
-				StandardOpenOption.TRUNCATE_EXISTING);
+			// Create or truncate the file and write contents using UTF-8
+			Files.writeString(
+					filePath,
+					content,
+					StandardCharsets.UTF_8,
+					StandardOpenOption.CREATE,
+					StandardOpenOption.TRUNCATE_EXISTING);
+		} catch (IOException e) {
+			System.out.println("Failed to write to file: " + fileName);
+			e.printStackTrace();
+		}
 
 	}
 
@@ -103,50 +108,65 @@ public class GitUtils {
 	// Notes:
 	// - Ensures parent directories exist
 	// - Uses UTF-8 and appends without truncating existing content
-	public static void appendToFile(String fileName, String content) throws IOException {
+	public static void appendToFile(String fileName, String content) {
 
-		Path filePath = Paths.get(fileName);
+		try {
+			Path filePath = Paths.get(fileName);
 
-		ensureParentDirectories(filePath);
+			ensureParentDirectories(filePath);
 
-		Files.writeString(
-				filePath,
-				content,
-				StandardCharsets.UTF_8,
-				StandardOpenOption.CREATE,
-				StandardOpenOption.APPEND);
+			Files.writeString(
+					filePath,
+					content,
+					StandardCharsets.UTF_8,
+					StandardOpenOption.CREATE,
+					StandardOpenOption.APPEND);
+		} catch (IOException e) {
+			System.out.println("Failed to append to file: " + fileName);
+			e.printStackTrace();
+		}
 	}
 
 	// writeBytes - writes raw bytes to a file (creates or truncates)
-	public static void writeBytes(String fileName, byte[] data) throws IOException {
-
-		Path filePath = Paths.get(fileName);
-		ensureParentDirectories(filePath);
-		Files.write(
-				filePath,
-				data,
-				StandardOpenOption.CREATE,
-				StandardOpenOption.TRUNCATE_EXISTING);
+	public static void writeBytes(String fileName, byte[] data) {
+		try {
+			Path filePath = Paths.get(fileName);
+			ensureParentDirectories(filePath);
+			Files.write(
+					filePath,
+					data,
+					StandardOpenOption.CREATE,
+					StandardOpenOption.TRUNCATE_EXISTING);
+		} catch (IOException e) {
+			System.out.println("Failed to write bytes to file: " + fileName);
+			e.printStackTrace();
+		}
 	}
 
 	// readAllBytes - reads raw bytes from a file
-	public static byte[] readAllBytes(String fileName) throws IOException {
-		return Files.readAllBytes(Paths.get(fileName));
+	public static byte[] readAllBytes(String fileName) {
+		try {
+			return Files.readAllBytes(Paths.get(fileName));
+		} catch (IOException e) {
+			System.out.println("Failed to read bytes from file: " + fileName);
+			e.printStackTrace();
+		}
+		return null;
 	}
 
-	public static String hashFile(String input) {
-		File file = new File(input);
+	public static String hashFile(String filePath) {
+		File file = new File(filePath);
 		if (!file.exists()) {
-			throw new IllegalArgumentException("File not found: " + input);
+			throw new IllegalArgumentException("File not found: " + filePath);
 		}
 		if (file.isDirectory()) {
-			throw new IllegalArgumentException("File is a directory: " + input);
+			throw new IllegalArgumentException("File is a directory: " + filePath);
 		}
 
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
 			// Stream the file to avoid loading it fully into memory
-			try (InputStream in = new BufferedInputStream(Files.newInputStream(Paths.get(input)))) {
+			try (InputStream in = new BufferedInputStream(Files.newInputStream(Paths.get(filePath)))) {
 				byte[] buffer = new byte[8192];
 				int read;
 				while ((read = in.read(buffer)) != -1) {
@@ -169,6 +189,27 @@ public class GitUtils {
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public static String hashContent(String content) {
+
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+			md.update(bytes);
+			byte[] digest = md.digest();
+			StringBuilder hexString = new StringBuilder();
+			for (byte b : digest) {
+				String hex = Integer.toHexString(0xff & b);
+				if (hex.length() == 1)
+					hexString.append('0');
+				hexString.append(hex);
+			}
+			return hexString.toString();
+		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
 		return null;
@@ -288,6 +329,32 @@ public class GitUtils {
 				System.out.println("Failed to create parent directories for: " + path);
 				e.printStackTrace();
 			}
+		}
+	}
+
+	public static void reset(String directory) {
+		// delete all the git directory
+		File directoryFile = new File(directory);
+		File[] files = directoryFile.listFiles();
+		if (files == null) {
+			return;
+		}
+		for (File file : files) {
+			if (file.isDirectory()) {
+				reset(file.getPath());
+			}
+			file.delete();
+		}
+		directoryFile.delete();
+	}
+
+	public static void cleanup(String directory) {
+		// delete all the blobs in the objects directory
+		GitUtils.reset(directory);
+		try {
+			Git.init();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }

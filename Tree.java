@@ -70,13 +70,13 @@ public class Tree {
         }
 
         // Create the working list file and write the content to it
-        GitUtils.createFile(Git.GIT_DIRECTORY, Git.TEMPFILE);
-        GitUtils.writeToFile(Git.GIT_DIRECTORY + "/" + Git.TEMPFILE, workingListContent.toString());
+        GitUtils.createFile(Git.GIT_DIRECTORY, Git.WORKING_LIST_FIlE);
+        GitUtils.writeToFile(Git.GIT_DIRECTORY + "/" + Git.WORKING_LIST_FIlE, workingListContent.toString());
     }
 
     public static void buildTreesFromWorkingList() throws IOException {
         // read the temp file and split it into lines
-        String tempPath = Git.GIT_DIRECTORY + "/" + Git.TEMPFILE;
+        String tempPath = Git.GIT_DIRECTORY + "/" + Git.WORKING_LIST_FIlE;
         String content = GitUtils.readFileToString(tempPath);
         if (content == null)
             content = "";
@@ -175,6 +175,7 @@ public class Tree {
                 updated.append(l).append('\n');
             }
             GitUtils.writeToFile(tempPath, updated.toString());
+
         }
     }
 
@@ -255,5 +256,12 @@ public class Tree {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String getRootTreeSha() {
+
+        String rootTreeEntry = GitUtils.readFileToString(Git.GIT_DIRECTORY + "/" + Git.WORKING_LIST_FIlE);
+        String rootTreeSha = rootTreeEntry.split(" ")[1];
+        return rootTreeSha;
     }
 }
